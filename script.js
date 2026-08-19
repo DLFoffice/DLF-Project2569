@@ -70,33 +70,35 @@ function showToast(msg, dur=2500) {
     const s = document.createElement('style');
     s.id = '_ntfSt';
     s.textContent = `
-      @keyframes _ntfIn  { 0%{opacity:0;transform:translateY(-28px) scale(.92)} 60%{transform:translateY(4px) scale(1.02)} 100%{opacity:1;transform:translateY(0) scale(1)} }
-      @keyframes _ntfOut { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-20px) scale(.94)} }
+      @keyframes _ntfIn  { 0%{opacity:0;transform:translateY(-28px) scale(.9)} 55%{transform:translateY(4px) scale(1.03)} 100%{opacity:1;transform:translateY(0) scale(1)} }
+      @keyframes _ntfOut { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-20px) scale(.92)} }
+      @keyframes _ntfIconPop { 0%{transform:scale(.4);opacity:0} 60%{transform:scale(1.12);opacity:1} 100%{transform:scale(1)} }
       @keyframes _ntfBar { from{width:100%} to{width:0%} }
       ._ntf-overlay { position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none; }
       ._ntf-box {
         pointer-events:auto;
-        min-width:280px;max-width:440px;
+        min-width:300px;max-width:400px;
         background:#fff;
-        border-radius:14px;
-        box-shadow:0 8px 32px rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.08);
+        border-radius:18px;
+        box-shadow:0 16px 48px rgba(0,0,0,.18),0 4px 12px rgba(0,0,0,.08);
         overflow:hidden;
         animation:_ntfIn .42s cubic-bezier(.22,.68,0,1.2) forwards;
         font-family:'Sarabun',sans-serif;
         cursor:pointer;
       }
-      ._ntf-inner { display:flex;align-items:center;gap:14px;padding:16px 20px; }
+      ._ntf-inner { position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:32px 26px 26px; }
       ._ntf-icon-wrap {
-        width:40px;height:40px;border-radius:10px;
+        width:68px;height:68px;border-radius:50%;
         display:flex;align-items:center;justify-content:center;
-        font-size:20px;flex-shrink:0;
+        font-size:36px;flex-shrink:0;
+        animation:_ntfIconPop .5s cubic-bezier(.34,1.56,.64,1) .05s both;
       }
-      ._ntf-text { flex:1;min-width:0; }
-      ._ntf-title { font-size:13.5px;font-weight:700;color:#1c2333;line-height:1.4; }
-      ._ntf-sub   { font-size:11.5px;color:#6b7280;margin-top:2px;line-height:1.4; }
-      ._ntf-bar   { height:3px;border-radius:0 0 14px 14px; }
-      ._ntf-bar-fill { height:100%;border-radius:0 0 14px 14px;animation:_ntfBar var(--dur,2.5s) linear forwards; }
-      ._ntf-close { flex-shrink:0;width:26px;height:26px;border-radius:50%;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:16px;transition:background .15s;margin-left:4px; }
+      ._ntf-text { min-width:0; }
+      ._ntf-title { font-size:16px;font-weight:700;color:#1c2333;line-height:1.4; }
+      ._ntf-sub   { font-size:12.5px;color:#6b7280;margin-top:4px;line-height:1.5; }
+      ._ntf-bar   { height:3px;border-radius:0 0 18px 18px; }
+      ._ntf-bar-fill { height:100%;border-radius:0 0 18px 18px;animation:_ntfBar var(--dur,2.5s) linear forwards; }
+      ._ntf-close { position:absolute;top:8px;right:8px;flex-shrink:0;width:28px;height:28px;border-radius:50%;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:16px;transition:background .15s; }
       ._ntf-close:hover { background:#f3f4f6;color:#374151; }
     `;
     document.head.appendChild(s);
@@ -145,15 +147,15 @@ function showToast(msg, dur=2500) {
 
   const box = document.createElement('div');
   box.className = '_ntf-box';
-  box.style.borderLeft = '4px solid '+borderL;
+  box.style.borderTop = '4px solid '+borderL;
   box.innerHTML = `
     <div class="_ntf-inner">
+      <button class="_ntf-close" title="ปิด">✕</button>
       <div class="_ntf-icon-wrap" style="background:${iconBg};color:${iconColor}">${icon}</div>
       <div class="_ntf-text">
         <div class="_ntf-title">${title}</div>
         ${sub ? '<div class="_ntf-sub">'+sub+'</div>' : ''}
       </div>
-      <button class="_ntf-close" title="ปิด">✕</button>
     </div>
     <div class="_ntf-bar"><div class="_ntf-bar-fill" style="background:${barColor};--dur:${dur/1000}s"></div></div>
   `;
@@ -2099,6 +2101,203 @@ function _comStats(fp) {
   return map;
 }
 
+// ══════════════════════════════════════════════════════
+// Export PDF แยกตามคณะอนุกรรมการ — รูปเล่มฉบับสมบูรณ์ (ปีงบประมาณ 2569)
+// ใช้วิธีเปิดหน้าต่างพิมพ์ (window.print ผ่านหน้าต่างใหม่) แทน html2canvas ที่ใช้กับรายงานความเสี่ยง
+// เพราะเนื้อหามีหลายหน้า/หลายโครงการ การแปลงเป็นภาพแบบ html2canvas จะตัดหน้ากระดาษไม่ตรงตำแหน่ง
+// (ตัดกลางตาราง/กลางข้อความได้) จึงใช้ CSS print แบบ native ของเบราว์เซอร์แทน ให้ตัดหน้าได้แม่นยำกว่า
+// ══════════════════════════════════════════════════════
+const _COMMITTEE_LOGO_URL_69 = 'https://dltv.ac.th/upload/data/users/0/316/CMS/images/logo%20dlf%20%E0%B8%AA%E0%B8%A1%E0%B8%9A%E0%B8%B9%E0%B8%A3%E0%B8%93%E0%B9%8C.png';
+const S_COLORS_69 = {1:'#3b72f0',2:'#059669',3:'#d97706',4:'#9333ea',5:'#0891b2'};
+
+function _cpEsc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function _cpFmt(n){ return Math.round(n||0).toLocaleString('th-TH'); }
+function _cpCell(txt, opts){
+  const {bold,center,right,bg,color,small,width} = opts||{};
+  return `<td style="border:1px solid #a9b6c9;padding:5px 7px;font-size:${small?'9.5':'10.5'}px;font-weight:${bold?'700':'400'};text-align:${center?'center':right?'right':'left'};background:${bg||'transparent'};color:${color||'#161c26'};${width?'width:'+width+';':''}vertical-align:middle">${txt!=null?txt:''}</td>`;
+}
+function _cpSectionHeader(num, title, color){
+  return `<div style="background:${color||'#2c3e70'};color:#fff;font-weight:700;font-size:11px;padding:6px 12px;margin:16px 0 7px;border-radius:4px;display:flex;align-items:center;gap:7px">
+    <span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;background:rgba(255,255,255,.22);border-radius:9px;font-size:10px">${num}</span>
+    <span>${title}</span>
+  </div>`;
+}
+
+// หน้าปกเฉพาะของอนุกรรมการ (ธีมสีตามอนุกรรมการนั้น)
+function _buildCommitteeCoverPageHTML_69(year, committee) {
+  return `
+  <div style="page-break-after:always;min-height:255mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 36px">
+    <img src="${_COMMITTEE_LOGO_URL_69}" style="width:100px;height:auto;margin-bottom:22px" alt="logo">
+    <div style="font-size:13px;letter-spacing:1px;color:#5a6a85;margin-bottom:10px">รายงานสรุปโครงการ</div>
+    <div style="width:76px;height:76px;border-radius:50%;background:${committee.colorLight};border:3px solid ${committee.color};display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:18px">${committee.icon}</div>
+    <div style="font-size:22px;font-weight:700;color:${committee.color};line-height:1.6;margin-bottom:6px">อนุกรรมการ${_cpEsc(committee.label)}</div>
+    <div style="font-size:14px;color:#333;margin-bottom:14px">ปีงบประมาณ พ.ศ. ${year}</div>
+    <div style="width:96px;height:4px;border-radius:2px;background:linear-gradient(90deg,${committee.color},${committee.colorLight});margin:6px 0 26px"></div>
+    <div style="font-size:14.5px;font-weight:600;color:#333;margin-bottom:4px">มูลนิธิการศึกษาทางไกลผ่านดาวเทียม</div>
+    <div style="font-size:14.5px;font-weight:600;color:#333">ในพระบรมราชูปถัมภ์</div>
+  </div>`;
+}
+
+// หน้าสรุปภาพรวมของอนุกรรมการนี้โดยเฉพาะ (ขอบเขตเฉพาะโครงการของอนุกรรมการนี้เท่านั้น)
+function _buildCommitteeSummaryPageHTML_69(fp, year, committee) {
+  const budget = fp.reduce((a,p)=>a+(p.budget||0),0);
+  const spent  = fp.reduce((a,p)=>a+(p.spent||0),0);
+  const po     = fp.reduce((a,p)=>a+(p.po||0),0);
+  const remaining = budget - spent - po;
+  const usedPct = budget > 0 ? Math.round((spent+po)/budget*100) : 0;
+  const done = fp.filter(p=>p.status==='done').length;
+  const prog = fp.filter(p=>p.status==='progress').length;
+  const pend = fp.length - done - prog;
+  const statusRows = [
+    {label:'✅ แล้วเสร็จ', n:done, color:'#059669'},
+    {label:'⏳ อยู่ระหว่างดำเนินการ', n:prog, color:'#d97706'},
+    {label:'⭕ ยังไม่เริ่มดำเนินการ', n:pend, color:'#9aa3b2'},
+  ];
+  const listRows = fp.map((p,i)=>{
+    const rem = (p.budget||0)-(p.spent||0)-(p.po||0);
+    const zebra = i%2===1 ? '#f6f8fc' : '#fff';
+    return `<tr>
+      ${_cpCell(i+1,{center:true,bg:zebra})}
+      ${_cpCell(_cpEsc(p.name||''),{bg:zebra})}
+      ${_cpCell(_cpEsc(p.owner||''),{small:true,bg:zebra})}
+      ${_cpCell(_cpFmt(p.budget),{right:true,bg:zebra})}
+      ${_cpCell(_cpFmt(p.spent),{right:true,bg:zebra})}
+      ${_cpCell(_cpFmt(p.po),{right:true,bg:zebra})}
+      ${_cpCell(_cpFmt(rem),{right:true,color:'#059669',bg:zebra})}
+      ${_cpCell(STATUS_LABEL[p.status]||'-',{center:true,small:true,bg:zebra})}
+    </tr>`;
+  }).join('');
+
+  return `
+  <div style="page-break-after:always;padding:6px 36px 28px;font-size:11px;line-height:1.7">
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:700;color:${committee.color}">${committee.icon} สรุปภาพรวม อนุกรรมการ${_cpEsc(committee.label)}</div>
+      <div style="font-size:10.5px;color:#666">ปีงบประมาณ พ.ศ. ${year} · ${fp.length} โครงการ</div>
+    </div>
+    <div style="font-size:10.5px;text-align:justify;margin-bottom:14px">
+      อนุกรรมการ${_cpEsc(committee.label)} รับผิดชอบดูแลโครงการภายใต้แผนปฏิบัติการประจำปีงบประมาณ พ.ศ. ${year}
+      รวมทั้งสิ้น <strong>${fp.length}</strong> โครงการ คิดเป็นงบประมาณรวม <strong>${_cpFmt(budget)}</strong> บาท
+      ณ ปัจจุบันมีการเบิกจ่ายและก่อหนี้ผูกพัน (ใช้ไป + PO) แล้วรวม <strong>${_cpFmt(spent+po)}</strong> บาท
+      คิดเป็นร้อยละ <strong>${usedPct}</strong> ของงบประมาณ คงเหลืองบประมาณที่ยังไม่ได้เบิกจ่ายอีก <strong>${_cpFmt(remaining)}</strong> บาท
+    </div>
+    ${_cpSectionHeader('ก','งบประมาณโดยสรุป',committee.color)}
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:10px">
+      <tr>${_cpCell('งบประมาณรวมของอนุกรรมการ',{bold:true,bg:'#e3e9f6'})}${_cpCell(_cpFmt(budget)+' บาท',{right:true,bold:true,bg:'#e3e9f6',width:'150px'})}</tr>
+      <tr>${_cpCell('ใช้ไป + PO (ก่อหนี้ผูกพัน)',{bg:'#f6f8fc'})}${_cpCell(_cpFmt(spent+po)+' บาท',{right:true,bg:'#f6f8fc',width:'150px'})}</tr>
+      <tr>${_cpCell('คงเหลือ',{bold:true})}${_cpCell(_cpFmt(remaining)+' บาท',{right:true,bold:true,color:remaining<0?'#dc2626':'#059669',width:'150px'})}</tr>
+    </table>
+    ${_cpSectionHeader('ข','สถานะการดำเนินงานโครงการ',committee.color)}
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:10px">
+      <tr>${_cpCell('สถานะโครงการ',{bold:true,bg:'#e3e9f6'})}${_cpCell('จำนวนโครงการ',{bold:true,center:true,bg:'#e3e9f6',width:'110px'})}${_cpCell('สัดส่วน',{bold:true,center:true,bg:'#e3e9f6',width:'90px'})}</tr>
+      ${statusRows.map((r,i)=>{
+        const zebra = i%2===1 ? '#f6f8fc' : '#fff';
+        const pctS = fp.length ? Math.round(r.n/fp.length*100) : 0;
+        return `<tr>${_cpCell(r.label,{color:r.color,bold:true,bg:zebra})}${_cpCell(r.n,{center:true,bg:zebra})}${_cpCell(pctS+'%',{center:true,bg:zebra})}</tr>`;
+      }).join('')}
+    </table>
+    ${_cpSectionHeader('ค','รายชื่อโครงการทั้งหมด',committee.color)}
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+      <tr>
+        ${_cpCell('ที่',{bold:true,center:true,bg:'#e3e9f6',width:'24px'})}
+        ${_cpCell('ชื่อโครงการ',{bold:true,center:true,bg:'#e3e9f6'})}
+        ${_cpCell('ผู้รับผิดชอบ',{bold:true,center:true,bg:'#e3e9f6',width:'90px',small:true})}
+        ${_cpCell('งบอนุมัติ',{bold:true,center:true,bg:'#e3e9f6',width:'75px',small:true})}
+        ${_cpCell('ใช้ไป',{bold:true,center:true,bg:'#e3e9f6',width:'70px',small:true})}
+        ${_cpCell('PO',{bold:true,center:true,bg:'#e3e9f6',width:'65px',small:true})}
+        ${_cpCell('คงเหลือ',{bold:true,center:true,bg:'#e3e9f6',width:'70px',small:true})}
+        ${_cpCell('สถานะ',{bold:true,center:true,bg:'#e3e9f6',width:'70px',small:true})}
+      </tr>
+      ${listRows}
+      <tr>
+        ${_cpCell('รวม',{bold:true,center:true,bg:'#e3e9f6'})}
+        ${_cpCell('',{bg:'#e3e9f6'})}
+        ${_cpCell(_cpFmt(budget),{right:true,bold:true,bg:'#eef2ff'})}
+        ${_cpCell(_cpFmt(spent),{right:true,bold:true,bg:'#eef2ff'})}
+        ${_cpCell(_cpFmt(po),{right:true,bold:true,bg:'#eef2ff'})}
+        ${_cpCell(_cpFmt(remaining),{right:true,bold:true,color:'#059669',bg:'#eef2ff'})}
+        ${_cpCell('',{bg:'#eef2ff'})}
+      </tr>
+    </table>
+  </div>`;
+}
+
+// หน้ารายละเอียดโครงการ 1 หน้า/1 โครงการ (งบประมาณ สถานะ ตัวชี้วัด ผลการดำเนินงาน ปัญหา แนวทางแก้ไข)
+function _buildProjectDetailPageHTML_69(p, year, isLast) {
+  const rem = (p.budget||0)-(p.spent||0)-(p.po||0);
+  const kpis = p.kpi || [];
+  return `
+  <div style="${isLast?'':'page-break-after:always;'}padding:6px 36px 28px;font-size:11px;line-height:1.7">
+    <div style="border-bottom:2px solid ${S_COLORS_69[p.strategy]||'#2c3e70'};padding-bottom:8px;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700;color:#1e2f4f">${_cpEsc(p.name||'')}</div>
+      <div style="font-size:10.5px;color:#666;margin-top:2px">${S_NAMES[p.strategy]||''}${p.owner?' · ผู้รับผิดชอบ: '+_cpEsc(p.owner):''}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:12px">
+      <tr>${_cpCell('งบอนุมัติ (บาท)',{bold:true,center:true,bg:'#e3e9f6'})}${_cpCell('ใช้ไป (บาท)',{bold:true,center:true,bg:'#e3e9f6'})}${_cpCell('PO (บาท)',{bold:true,center:true,bg:'#e3e9f6'})}${_cpCell('คงเหลือ (บาท)',{bold:true,center:true,bg:'#e3e9f6'})}</tr>
+      <tr>${_cpCell(_cpFmt(p.budget),{right:true})}${_cpCell(_cpFmt(p.spent),{right:true,color:'#059669'})}${_cpCell(_cpFmt(p.po),{right:true,color:'#d97706'})}${_cpCell(_cpFmt(rem),{right:true,bold:true,color:rem<0?'#dc2626':'#111'})}</tr>
+    </table>
+    <div style="margin-bottom:10px"><span style="display:inline-block;padding:3px 10px;border-radius:99px;font-size:10.5px;font-weight:600;background:#f0fdf4;color:#166534">สถานะ: ${STATUS_LABEL[p.status]||'-'}</span></div>
+    ${kpis.length ? `<div style="margin-bottom:10px"><div style="font-weight:700;font-size:11px;margin-bottom:4px">ตัวชี้วัด (KPI)</div><ul style="margin:0;padding-left:18px">${kpis.map(k=>`<li>${_cpEsc(k)}</li>`).join('')}</ul></div>` : ''}
+    ${p.result ? `<div style="margin-bottom:10px"><div style="font-weight:700;font-size:11px;margin-bottom:4px">ผลการดำเนินงาน</div><div style="border:1px solid #5a6a85;padding:8px 10px;white-space:pre-wrap;text-align:justify">${_cpEsc(p.result).replace(/\n/g,'<br>')}</div></div>` : ''}
+    ${p.problems ? `<div style="margin-bottom:10px"><div style="font-weight:700;font-size:11px;margin-bottom:4px">ปัญหาและอุปสรรค</div><div style="border:1px solid #5a6a85;padding:8px 10px;background:#fff7f7;white-space:pre-wrap;text-align:justify">${_cpEsc(p.problems).replace(/\n/g,'<br>')}</div></div>` : ''}
+    ${p.solutions ? `<div style="margin-bottom:10px"><div style="font-weight:700;font-size:11px;margin-bottom:4px">แนวทางแก้ไข / ข้อเสนอแนะ</div><div style="border:1px solid #5a6a85;padding:8px 10px;background:#f3fbf6;white-space:pre-wrap;text-align:justify">${_cpEsc(p.solutions).replace(/\n/g,'<br>')}</div></div>` : ''}
+  </div>`;
+}
+
+// รวมทุกส่วนแล้วเปิดหน้าต่างพิมพ์ — ผู้ใช้กด "บันทึกเป็น PDF" ในกล่องพิมพ์ของเบราว์เซอร์เอง
+async function exportCommitteePDF(comKey) {
+  const committee = [...COM_LIST, COM_UNASSIGNED].find(c => c.key === comKey) || COM_UNASSIGNED;
+  const fp = projects.filter(p => {
+    const coms = _getCommittees(p);
+    return coms.length ? coms.includes(comKey) : comKey === COM_UNASSIGNED.key;
+  });
+  if (!fp.length) {
+    showToast(`ยังไม่มีโครงการในอนุกรรมการ${committee.label}`);
+    return;
+  }
+  const year = 2569;
+
+  // เปิดหน้าต่างใหม่ก่อนมี await/การประมวลผลใดๆ กัน browser บล็อก popup เพราะไม่ถือเป็น user-gesture ทันที
+  const printWin = window.open('', '_blank');
+  if (!printWin) {
+    alert('เบราว์เซอร์บล็อกป๊อปอัปสำหรับหน้าต่างพิมพ์ PDF กรุณาอนุญาต popup ของเว็บนี้แล้วลองใหม่อีกครั้ง');
+    return;
+  }
+
+  let body = _buildCommitteeCoverPageHTML_69(year, committee);
+  body += _buildCommitteeSummaryPageHTML_69(fp, year, committee);
+  body += fp.map((p,i) => _buildProjectDetailPageHTML_69(p, year, i === fp.length-1)).join('');
+
+  const safeLabel = (committee.label||'').replace(/[\/\\:*?"<>|]/g,'').substring(0,40);
+  const docHtml = `<!DOCTYPE html>
+<html lang="th"><head><meta charset="UTF-8">
+<title>รายงานอนุกรรมการ_${safeLabel}_${year}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 14mm 12mm 16mm; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin:0; padding:0; background:#fff; font-family:'Sarabun',sans-serif; color:#161c26; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; break-inside: avoid; }
+  .pdf-toolbar { position:sticky; top:0; z-index:10; background:#1e2f4f; color:#fff; padding:10px 16px;
+    display:flex; align-items:center; justify-content:space-between; font-size:13px; font-family:'Sarabun',sans-serif; }
+  .pdf-toolbar button { font-family:'Sarabun',sans-serif; font-size:13px; font-weight:600; padding:7px 16px;
+    border:none; border-radius:6px; background:#dc2626; color:#fff; cursor:pointer; }
+  @media print { .pdf-toolbar { display:none; } }
+</style>
+</head><body>
+  <div class="pdf-toolbar">
+    <span>ตัวอย่างก่อนพิมพ์ — กด "บันทึกเป็น PDF" ในหน้าต่างพิมพ์ของเบราว์เซอร์</span>
+    <button onclick="window.print()">🖨️ พิมพ์ / บันทึกเป็น PDF</button>
+  </div>
+  ${body}
+  <script>setTimeout(()=>window.print(), 400);<\/script>
+</body></html>`;
+
+  printWin.document.open();
+  printWin.document.write(docHtml);
+  printWin.document.close();
+}
+
 function renderCommitteeSection(fp) {
   const qEl = document.getElementById('committeeQuarterLabel');
   if (qEl) qEl.textContent = Q_LABEL[currentQuarter] + ' · ปีงบประมาณ พ.ศ. 2569';
@@ -2118,9 +2317,14 @@ function renderCommitteeSection(fp) {
       return `
         <div class="metric-card" style="background:linear-gradient(135deg,${c.colorLight},${c.colorLight});border-color:${c.color}33;position:relative;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s" onclick="filterByCommittee('${c.key}')" title="ดูโครงการของอนุกรรมการนี้" onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px ${c.color}22'" onmouseleave="this.style.transform='';this.style.boxShadow=''">
           <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:${c.color};border-radius:4px 0 0 4px"></div>
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
-            <span style="font-size:18px">${c.icon}</span>
-            <span style="font-size:10.5px;font-weight:700;color:${c.color};line-height:1.3">อนุกรรมการ<br>${c.label}</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:7px">
+              <span style="font-size:18px">${c.icon}</span>
+              <span style="font-size:10.5px;font-weight:700;color:${c.color};line-height:1.3">อนุกรรมการ<br>${c.label}</span>
+            </div>
+            <button onclick="event.stopPropagation();exportCommitteePDF('${c.key}')" title="Export PDF รายงานอนุกรรมการ${c.label} (รูปเล่มฉบับสมบูรณ์)"
+              style="border:none;background:rgba(255,255,255,.65);color:${c.color};width:22px;height:22px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;transition:background .15s"
+              onmouseover="this.style.background='#fff'" onmouseout="this.style.background='rgba(255,255,255,.65)'">📄</button>
           </div>
           <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">งบอนุมัติ</div>
           <div style="font-size:20px;font-weight:800;color:${c.color};line-height:1.1;margin-bottom:3px">${fmt(d.budget)}</div>
